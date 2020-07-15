@@ -1,16 +1,45 @@
 {
-  "description": "",
+  "name": "caherrera/shortio-laravel",
+  "description": "shortio-laravel Is A ShortIO Api For Laravel",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "framework",
+    "short.io",
+    "php-shortio-api",
+    "PHP Short.io API",
+    "shortio bridge",
+    "bridge",
+    "Short.io",
+    "Laravel Short.io",
+    "Laravel-Short.io",
+    "Carlos Herrera",
+    "Caherrera"
+  ],
+  "support": {
+    "docs": "https://github.com/caherrera/shortio-laravel/blob/master/readme.md",
+    "issues": "https://github.com/caherrera/shortio-laravel/issues",
+    "source": "https://github.com/caherrera/shortio-laravel"
+  },
+  "authors": [
+    {
+      "name": "Carlos Herrera",
+      "email": "caherrera@gmail.com"
+    }
+  ],
   "require": {
-    "guzzlehttp/guzzle": "^7.0"
+    "guzzlehttp/guzzle": "^7.0",
+    "illuminate/support": "^7.20",
+    "illuminate/http": "^7.20"
   },
   "autoload": {
     "psr-4": {
-      "Caherrera\\ShortioLaravel\\": "src/"
+      "Shortio\\Laravel\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Caherrera\\Tests\\ShortioLaravel\\": "tests/"
+      "Shortio\\Laravel\\Tests\\": "tests/"
     }
   },
   "config": {
@@ -19,7 +48,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Caherrera\\ShortioLaravel\\ShortioServiceProvider"
+        "Shortio\\Laravel\\ShortioServiceProvider"
       ]
     }
   },
