@@ -1,0 +1,28 @@
+{
+  "description": "",
+  "require": {
+    "guzzlehttp/guzzle": "^7.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Caherrera\\ShortioLaravel\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Caherrera\\Tests\\ShortioLaravel\\": "tests/"
+    }
+  },
+  "config": {
+    "preferred-install": "dist"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Caherrera\\ShortioLaravel\\ShortioServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
