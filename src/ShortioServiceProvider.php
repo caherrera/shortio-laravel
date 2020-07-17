@@ -72,7 +72,7 @@ class ShortioServiceProvider extends ServiceProvider
                     throw new \RuntimeException($message);
                 }
 
-                return new Shortio();
+                return new Shortio($config);
             }
         );
     }

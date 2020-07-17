@@ -2,7 +2,7 @@
 
 namespace Shortio\Laravel\Api;
 
-class Link extends Shortio
+class Link extends Api
 {
 
 }

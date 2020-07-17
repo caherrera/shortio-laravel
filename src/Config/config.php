@@ -7,11 +7,23 @@ return [
     | Api
     |--------------------------------------------------------------------------
     |
-    | This is api url for short.io
+    | This is host api for short.io
     |
     */
 
-    'api' => env('SHORTIO_API', 'https://api.short.cm/'),
+    'api' => env('SHORTIO_API', 'api.short.cm'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Secure Protocol
+    |--------------------------------------------------------------------------
+    |
+    | indicate if use secure protocol
+    |
+    */
+
+    'secure'  => env('SHORTIO_SECURE', true),
+
 
     /*
     |--------------------------------------------------------------------------
@@ -23,7 +35,7 @@ return [
     | and JavaScript webpages and iPhone/Android apps.
     |
     */
-    'secret' => env('SHORTIO_KEY', null),
+    'secret'  => env('SHORTIO_KEY', null),
 
     /*
     |--------------------------------------------------------------------------
@@ -37,7 +49,17 @@ return [
     | you expect this behavior.
     |
     */
-    'public' => env('SHORTIO_PUBKEY', null),
+    'public'  => env('SHORTIO_PUBKEY', null),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Headers
+    |--------------------------------------------------------------------------
+    |
+    | Any Extra Headers
+    |
+    */
+    'headers' => env('SHORTIO_HEADERS', null),
 
 
 ];
