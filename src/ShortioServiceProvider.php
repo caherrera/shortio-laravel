@@ -3,10 +3,10 @@
 namespace Shortio\Laravel;
 
 use Illuminate\Container\Container;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Shortio\Laravel\Api\Shortio;
 
 class ShortioServiceProvider extends ServiceProvider
 {
@@ -61,7 +61,7 @@ class ShortioServiceProvider extends ServiceProvider
         // Bind the contract to the object
         // in the IoC for dependency injection.
         $this->app->singleton(
-            Shortio::class,
+            'shortio',
             function (Container $app) {
                 $config = $app->make('config')->get('shortio');
 
@@ -84,7 +84,7 @@ class ShortioServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-        return [Shortio::class];
+        return [ConnectionInterface::class];
     }
 
     /**

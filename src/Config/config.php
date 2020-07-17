@@ -59,7 +59,7 @@ return [
     | Any Extra Headers
     |
     */
-    'headers' => env('SHORTIO_HEADERS', null),
+    'headers' => env('SHORTIO_HEADERS', []),
 
 
 ];

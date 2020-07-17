@@ -5,8 +5,15 @@ namespace Shortio\Laravel\Facades;
 
 
 use Illuminate\Support\Facades\Facade;
-use Shortio\Laravel\ConnectorInterface;
+use Shortio\Laravel\Api\Domain;
 
+
+/**
+ * Class Shortio
+ *
+ * @package Shortio\Laravel\Facades
+ * @method Domain domains();
+ */
 class Shortio extends Facade
 {
     /**
@@ -14,6 +21,6 @@ class Shortio extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return ConnectorInterface::class;
+        return 'shortio';
     }
 }

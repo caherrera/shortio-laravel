@@ -24,6 +24,10 @@ abstract class Api
     /**
      * @var string
      */
+    protected $path;
+    /**
+     * @var string
+     */
     private $id;
     /**
      * @var array
@@ -34,11 +38,11 @@ abstract class Api
      */
     private $baseUrl;
     private $connector;
-
     /**
      * @var Arrayable
      */
     private $requestHeaders;
+    private $requests = [];
 
     public function __construct(ConnectorInterface $connector, $id = null)
     {
@@ -78,12 +82,12 @@ abstract class Api
 
     public function getProtocol()
     {
-        return $this->config['secure'] ? 'http' : 'https';
+        return $this->config['secure'] ? 'https' : 'http';
     }
 
     public function getPath()
     {
-        return Str::slug(Str::plural($this->className()));
+        return $this->path ?? Str::slug(Str::plural($this->className()));
     }
 
     public function className()
@@ -144,7 +148,43 @@ abstract class Api
 
     public function get($id)
     {
-        return $this->prepareRequest()->get($id);
+        return $this->processRequest('get', $id);
+    }
+
+    /**
+     * @param $method
+     * @param  string  $url
+     * @param  array  $query
+     *
+     * @return array|mixed
+     * @throws \Exception
+     */
+    private function processRequest($method, $url = '', $query = [])
+    {
+        $response          = $this->__callRequest($method, $url, $query);
+        $this->responses[] = $response;
+
+        if ($response->successful()) {
+            return $response->json();
+        } elseif ($response->serverError()) {
+            throw new \Exception('Server Error');
+        } else {
+            throw new \Exception($response->body());
+        }
+    }
+
+    /**
+     * @param $method
+     * @param  string  $url
+     * @param  array  $query
+     *
+     * @return \Illuminate\Http\Client\Response
+     */
+    private function __callRequest($method, $url = '', $query = [])
+    {
+        $response = $this->prepareRequest()->asJson()->$method($url, $query);
+
+        return $response;
     }
 
     /**
@@ -152,8 +192,10 @@ abstract class Api
      */
     private function prepareRequest()
     {
-        return Http::baseUrl($this->getBaseUrl())
-                   ->withHeaders($this->getHeaders());
+        $request = Http::baseUrl($this->getBaseUrl())
+                       ->withHeaders($this->getHeaders());
+
+        return $this->requests[] = $request;
     }
 
     /**
@@ -178,7 +220,7 @@ abstract class Api
 
     public function all()
     {
-        return $this->prepareRequest()->get('');
+        return $this->processRequest('get');
     }
 
     public function save(array $data = [])
@@ -198,7 +240,7 @@ abstract class Api
 
     public function post($url, array $data = [])
     {
-        return $this->prepareRequest()->asJson()->post($url, $data);
+        return $this->processRequest('post', $url, $data);
     }
 
     public function update($id, array $data = [])
@@ -241,7 +283,7 @@ abstract class Api
 
     public function delete($id)
     {
-        return $this->prepareRequest()->delete($id);
+        return $this->processRequest('delete', $id, []);
     }
 
 }
