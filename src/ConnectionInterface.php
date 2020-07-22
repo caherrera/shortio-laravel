@@ -2,7 +2,7 @@
 
 namespace Shortio\Laravel;
 
-interface ConnectorInterface
+interface ConnectionInterface
 {
 
     public function setConfig(array $config = []);

@@ -6,7 +6,7 @@ use Shortio\Laravel\Api\Domain;
 use Shortio\Laravel\Api\Link;
 
 
-class Shortio implements ConnectorInterface
+class Shortio implements ConnectionInterface
 {
     const HEADER_APIKEY = 'authorization';
     protected $links;

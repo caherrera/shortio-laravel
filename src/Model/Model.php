@@ -3,14 +3,17 @@
 namespace Shortio\Laravel\Model;
 
 use ArrayAccess;
-use Illuminate\Database\Eloquent\JsonEncodingException;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Str;
 use JsonSerializable;
+use Shortio\Laravel\Api\ApiInterface;
+use Shortio\Laravel\Facades\Shortio;
 use Shortio\Laravel\Model\Concerns\GuardsAttributes;
 use Shortio\Laravel\Model\Concerns\HasAttributes;
 use Shortio\Laravel\Model\Concerns\HasEvents;
 use Shortio\Laravel\Model\Concerns\HidesAttributes;
 use Shortio\Laravel\Model\Exceptions\MassAssignmentException;
+
 
 abstract class Model implements ArrayAccess, JsonSerializable
 {
@@ -30,8 +33,22 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
 
     const UPDATED_AT = 'updatedAt';
+    /**
+     * Indicates if the model exists.
+     *
+     * @var bool
+     */
+    public $exists = false;
 
-
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+    /**
+     * @var ApiInterface
+     */
     protected $api;
 
     /**
@@ -96,6 +113,87 @@ abstract class Model implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * Destroy the models for the given IDs.
+     *
+     * @param  \Illuminate\Support\Collection|array|int|string  $ids
+     *
+     * @return int
+     */
+    public static function destroy($ids)
+    {
+        // We'll initialize a count here so we will return the total number of deletes
+        // for the operation. The developers can then check this number as a boolean
+        // type value or get this total count of records deleted for logging, etc.
+        $count = 0;
+
+        if ($ids instanceof BaseCollection) {
+            $ids = $ids->all();
+        }
+
+        $ids = is_array($ids) ? $ids : func_get_args();
+
+        // We will actually pull the models from the database table and call delete on
+        // each of them individually so that their events get fired properly with a
+        // correct set of attributes in case the developers wants to check these.
+        $key = ($instance = new static)->getKeyName();
+
+        $api   = $instance->getApi();
+        $count = collect($ids)->reduce(
+            function ($count, $id) use ($api) {
+                if ($api->delete($id)) {
+                    return $count + 1;
+                }
+
+                return $count;
+            }
+        );
+
+        return $count;
+    }
+
+    /**
+     * Get the primary key for the model.
+     *
+     * @return string
+     */
+    public function getKeyName()
+    {
+        return $this->primaryKey;
+    }
+
+    public function getApi()
+    {
+        if ($this->api === null) {
+            $this->setApi($this->prepareApi());
+        }
+
+        return $this->api;
+    }
+
+    /**
+     * @param  mixed  $api
+     *
+     * @return Model
+     */
+    public function setApi($api)
+    {
+        $this->api = $api;
+
+        return $this;
+    }
+
+    /**
+     * @return ApiInterface
+     */
+    public function prepareApi()
+    {
+        $method   = Str::pluralStudly(get_class($this));
+        $ApiClass = Shortio::$method();
+
+        return $ApiClass;
+    }
+
+    /**
      * Get the name of the "created at" column.
      *
      * @return string
@@ -113,26 +211,6 @@ abstract class Model implements ArrayAccess, JsonSerializable
     public function getUpdatedAtColumn()
     {
         return static::UPDATED_AT;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getApi()
-    {
-        return $this->api;
-    }
-
-    /**
-     * @param  mixed  $api
-     *
-     * @return Model
-     */
-    public function setApi($api)
-    {
-        $this->api = $api;
-
-        return $this;
     }
 
     /**
@@ -283,5 +361,164 @@ abstract class Model implements ArrayAccess, JsonSerializable
         $attributes = $this->getAttributes();
 
         return $attributes;
+    }
+
+    /**
+     * Save the model to the database.
+     *
+     * @param  array  $options
+     *
+     * @return bool
+     */
+    public function save(array $options = [])
+    {
+        // If the "saving" event returns false we'll bail out of the save and return
+        // false, indicating that the save failed. This provides a chance for any
+        // listeners to cancel save operations if validations fail or whatever.
+        if ($this->fireModelEvent('saving') === false) {
+            return false;
+        }
+
+        // If the model already exists in the database we can just update our record
+        // that is already in this database using the current IDs in this "where"
+        // clause to only update this model. Otherwise, we'll just insert them.
+        if ($this->exists) {
+            $saved = $this->isDirty() ?
+                $this->performUpdate($this->getApi()) : true;
+        }
+
+        // If the model is brand new, we'll insert it into our database and set the
+        // ID attribute on the model to the value of the newly inserted row's ID
+        // which is typically an auto-increment value managed by the database.
+        else {
+            $saved = $this->performInsert($this->getApi());
+        }
+
+        // If the model is successfully saved, we need to do a few more things once
+        // that is done. We will call the "saved" method here to run any actions
+        // we need to happen after a model gets successfully saved right here.
+        if ($saved) {
+            $this->finishSave($options);
+        }
+
+        return $saved;
+    }
+
+    /**
+     * Perform a model update operation.
+     *
+     * @return bool
+     */
+    protected function performUpdate(ApiInterface $api)
+    {
+        // If the updating event returns false, we will cancel the update operation so
+        // developers can hook Validation systems into their models and cancel this
+        // operation if the model does not pass validation. Otherwise, we update.
+        if ($this->fireModelEvent('updating') === false) {
+            return false;
+        }
+
+
+        // Once we have run the update operation, we will fire the "updated" event for
+        // this model instance. This will allow developers to hook into these after
+        // models are updated, giving them a chance to do any special processing.
+        $dirty = $this->getDirty();
+
+        if (count($dirty) > 0) {
+            $api->update($this->id, $dirty);
+
+            $this->syncChanges();
+
+            $this->fireModelEvent('updated', false);
+        }
+
+        return true;
+    }
+
+    /**
+     * Perform a model insert operation.
+     *
+     * @return bool
+     */
+    protected function performInsert(ApiInterface $api)
+    {
+        if ($this->fireModelEvent('creating') === false) {
+            return false;
+        }
+
+        $attributes = $this->getAttributes();
+
+        if (empty($attributes)) {
+            return true;
+        }
+
+        $data = $api->save($attributes);
+        $this->fill($data);
+
+        // We will go ahead and set the exists property to true, so that it is set when
+        // the created event is fired, just in case the developer tries to update it
+        // during the event. This will allow them to do so and run an update here.
+        $this->exists = true;
+
+        $this->wasRecentlyCreated = true;
+
+        $this->fireModelEvent('created', false);
+
+        return true;
+    }
+
+    /**
+     * Force a hard delete on a soft deleted model.
+     *
+     * This method protects developers from running forceDelete when trait is missing.
+     *
+     * @return bool|null
+     */
+    public function forceDelete()
+    {
+        return $this->delete();
+    }
+
+    /**
+     * Delete the model from the database.
+     *
+     * @return bool|null
+     *
+     * @throws \Exception
+     */
+    public function delete()
+    {
+        $this->mergeAttributesFromClassCasts();
+
+        if (is_null($this->getKeyName())) {
+            throw new Exception('No primary key defined on model.');
+        }
+
+        // If the model doesn't exist, there is nothing to delete so we'll just return
+        // immediately and not do anything else. Otherwise, we will continue with a
+        // deletion process on the model, firing the proper events, and so forth.
+        if ( ! $this->exists) {
+            return;
+        }
+
+        if ($this->fireModelEvent('deleting') === false) {
+            return false;
+        }
+
+        // Here, we'll touch the owning models, verifying these timestamps get updated
+        // for the models. This will allow any caching to get broken on the parents
+        // by the timestamp. Then we will go ahead and delete the model instance.
+//        $this->touchOwners();
+
+        $this->getApi()->delete($this->getAttribute($this->getKeyName()));
+        $this->exists = false;
+
+
+        // Once the model has been deleted, we will fire off the deleted event so that
+        // the developers may hook into post-delete operations. We will then return
+        // a boolean true as the delete is presumably successful on the database.
+        $this->fireModelEvent('deleted', false);
+
+        return true;
     }
 }

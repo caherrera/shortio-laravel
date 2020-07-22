@@ -7,7 +7,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Shortio\Laravel\ConnectorInterface;
+use Shortio\Laravel\ConnectionInterface;
 
 
 /**
@@ -15,7 +15,7 @@ use Shortio\Laravel\ConnectorInterface;
  *
  * @package Shortio\Laravel\Api
  */
-abstract class Api
+abstract class Api implements ApiInterface
 {
     /**
      * @var Response
@@ -44,7 +44,7 @@ abstract class Api
     private $requestHeaders;
     private $requests = [];
 
-    public function __construct(ConnectorInterface $connector, $id = null)
+    public function __construct(ConnectionInterface $connector, $id = null)
     {
         $this->setConnector($connector)
              ->setConfig($connector->config())
@@ -101,7 +101,7 @@ abstract class Api
     }
 
     /**
-     * @return ConnectorInterface
+     * @return ConnectionInterface
      */
     public function getConnector()
     {
@@ -113,7 +113,7 @@ abstract class Api
      *
      * @return Api
      */
-    public function setConnector(ConnectorInterface $connector)
+    public function setConnector(ConnectionInterface $connector)
     {
         $this->connector = $connector;
 
