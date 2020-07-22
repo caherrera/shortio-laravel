@@ -146,9 +146,9 @@ abstract class Api
         return $this;
     }
 
-    public function get($id)
+    public function get($id = null)
     {
-        return $this->processRequest('get', $id);
+        return collect($this->processRequest('get', $id));
     }
 
     /**
@@ -220,7 +220,9 @@ abstract class Api
 
     public function all()
     {
-        return $this->processRequest('get');
+        $array = $this->processRequest('get');
+
+        return is_array($array) ? collect($array) : collect();
     }
 
     public function save(array $data = [])

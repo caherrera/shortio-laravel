@@ -2,7 +2,6 @@
 
 namespace Shortio\Laravel\Tests;
 
-use Illuminate\Support\Facades\Hash;
 use Orchestra\Testbench\Concerns\CreatesApplication;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Shortio\Laravel\ShortioServiceProvider;
