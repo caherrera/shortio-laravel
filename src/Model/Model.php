@@ -34,12 +34,35 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     const UPDATED_AT = 'updatedAt';
     /**
+     * The event dispatcher instance.
+     *
+     * @var \Illuminate\Contracts\Events\Dispatcher
+     */
+    protected static $dispatcher;
+    /**
+     * The array of booted models.
+     *
+     * @var array
+     */
+    protected static $booted = [];
+    /**
+     * Indicates if the model exists.
+     *
+     * @var bool
+     */
+
+    /**
+     * The array of trait initializers that will be called on each new instance.
+     *
+     * @var array
+     */
+    protected static $traitInitializers = [];
+    /**
      * Indicates if the model exists.
      *
      * @var bool
      */
     public $exists = false;
-
     /**
      * The primary key for the model.
      *
@@ -60,9 +83,92 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
     public function __construct(array $attributes = [])
     {
+        $this->bootIfNotBooted();
         $this->syncOriginal();
 
         $this->fill($attributes);
+    }
+
+    /**
+     * Check if the model needs to be booted and if so, do it.
+     *
+     * @return void
+     */
+    protected function bootIfNotBooted()
+    {
+        if ( ! isset(static::$booted[static::class])) {
+            static::$booted[static::class] = true;
+
+            $this->fireModelEvent('booting', false);
+
+            static::booting();
+            static::boot();
+            static::booted();
+
+            $this->fireModelEvent('booted', false);
+        }
+    }
+
+    /**
+     * Perform any actions required before the model boots.
+     *
+     * @return void
+     */
+    protected static function booting()
+    {
+        //
+    }
+
+    /**
+     * Bootstrap the model and its traits.
+     *
+     * @return void
+     */
+    protected static function boot()
+    {
+        static::bootTraits();
+    }
+
+    /**
+     * Boot all of the bootable traits on the model.
+     *
+     * @return void
+     */
+    protected static function bootTraits()
+    {
+        $class = static::class;
+
+        $booted = [];
+
+        static::$traitInitializers[$class] = [];
+
+        foreach (class_uses_recursive($class) as $trait) {
+            $method = 'boot'.class_basename($trait);
+
+            if (method_exists($class, $method) && ! in_array($method, $booted)) {
+                forward_static_call([$class, $method]);
+
+                $booted[] = $method;
+            }
+
+            if (method_exists($class, $method = 'initialize'.class_basename($trait))) {
+                static::$traitInitializers[$class][] = $method;
+
+                static::$traitInitializers[$class] = array_unique(
+                    static::$traitInitializers[$class]
+                );
+            }
+        }
+    }
+
+    /**
+     * Perform any actions required after the model boots.
+     *
+     * @return void
+     */
+    protected static function booted()
+    {
+        //
     }
 
     /**
@@ -187,7 +293,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
     public function prepareApi()
     {
-        $method   = Str::pluralStudly(get_class($this));
+        $method   = Str::snake(Str::pluralStudly(class_basename($this)));
         $ApiClass = Shortio::$method();
 
         return $ApiClass;
@@ -379,9 +485,10 @@ abstract class Model implements ArrayAccess, JsonSerializable
             return false;
         }
 
-        // If the model already exists in the database we can just update our record
-        // that is already in this database using the current IDs in this "where"
-        // clause to only update this model. Otherwise, we'll just insert them.
+        // If the model already exists we can just update our record
+        // that is already in short.io using the current IDs. Otherwise, we'll
+        // just insert them.
+
         if ($this->exists) {
             $saved = $this->isDirty() ?
                 $this->performUpdate($this->getApi()) : true;
@@ -468,6 +575,33 @@ abstract class Model implements ArrayAccess, JsonSerializable
     }
 
     /**
+     * Perform any actions that are necessary after the model is saved.
+     *
+     * @param  array  $options
+     *
+     * @return void
+     */
+    protected function finishSave(array $options)
+    {
+        $this->fireModelEvent('saved', false);
+
+        if ($this->isDirty() && ($options['touch'] ?? true)) {
+            $this->touchOwners();
+        }
+
+        $this->syncOriginal();
+    }
+
+    /**
+     * Touch the owning relations of the model.
+     *
+     * @return void
+     */
+    public function touchOwners()
+    {
+    }
+
+    /**
      * Force a hard delete on a soft deleted model.
      *
      * This method protects developers from running forceDelete when trait is missing.
@@ -520,5 +654,17 @@ abstract class Model implements ArrayAccess, JsonSerializable
         $this->fireModelEvent('deleted', false);
 
         return true;
+    }
+
+    /**
+     * Initialize any initializable traits on the model.
+     *
+     * @return void
+     */
+    protected function initializeTraits()
+    {
+        foreach (static::$traitInitializers[static::class] as $method) {
+            $this->{$method}();
+        }
     }
 }

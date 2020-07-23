@@ -25,5 +25,6 @@ class Link extends Api
         "OwnerId",
         "secureShortURL",
         "shortURL",
+        "domain"
     ];
 }

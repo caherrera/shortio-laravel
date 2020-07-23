@@ -3,21 +3,13 @@
 namespace Shortio\Laravel;
 
 use Illuminate\Container\Container;
-use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Shortio\Laravel\Commands\Console\Create;
 
 class ShortioServiceProvider extends ServiceProvider
 {
-    /**
-     * We'll defer loading this service provider so our
-     * LDAP connection isn't instantiated unless
-     * requested to speed up our application.
-     *
-     * @var bool
-     */
-    protected $defer = true;
 
     /**
      * Run service provider boot operations.
@@ -38,6 +30,7 @@ class ShortioServiceProvider extends ServiceProvider
                     $config => config_path('shortio.php'),
                 ]
             );
+            $this->commands([Create::class]);
         }
     }
 
@@ -84,7 +77,7 @@ class ShortioServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-        return [ConnectionInterface::class];
+        return ['shortio'];
     }
 
     /**
