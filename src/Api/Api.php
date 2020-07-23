@@ -44,6 +44,8 @@ abstract class Api implements ApiInterface
     private $requestHeaders;
     private $requests = [];
 
+    private $queryString;
+
     public function __construct(ConnectionInterface $connector, $id = null)
     {
         $this->setConnector($connector)
@@ -139,6 +141,14 @@ abstract class Api implements ApiInterface
         return $this;
     }
 
+    /**
+     * @return boolean
+     */
+    public function hasQueryString()
+    {
+        return count($this->queryString) > 0;
+    }
+
     public function client()
     {
         return $this->getConnector();
@@ -166,7 +176,7 @@ abstract class Api implements ApiInterface
 
     public function get($id = null)
     {
-        return collect($this->processRequest('get', $id));
+        return $this->processRequest('get', $id ?? '', $this->getQueryString());
     }
 
     /**
@@ -200,7 +210,8 @@ abstract class Api implements ApiInterface
      */
     private function __callRequest($method, $url = '', $query = [])
     {
-        $response = $this->prepareRequest()->asJson()->$method($url, $query);
+        $request  = $this->prepareRequest()->asJson();
+        $response = $request->$method($url, $query);
 
         return $response;
     }
@@ -236,11 +247,31 @@ abstract class Api implements ApiInterface
         return $this->getConnector()->getHeaders();
     }
 
+    /**
+     * @return mixed
+     */
+    public function getQueryString()
+    {
+        return $this->queryString;
+    }
+
+    /**
+     * @param  mixed  $queryString
+     *
+     * @return Api
+     */
+    public function setQueryString(array $queryString)
+    {
+        $this->queryString = $queryString;
+
+        return $this;
+    }
+
     public function all()
     {
         $array = $this->processRequest('get');
 
-        return is_array($array) ? collect($array) : collect();
+        return $array ?? [];
     }
 
     public function save(array $data = [])
@@ -306,9 +337,14 @@ abstract class Api implements ApiInterface
         return $this->processRequest('delete', $id, []);
     }
 
-    public function withQueryString(array $data = []): ApiInterface
+    public function withQueryString(array $data = [])
     {
+        return $this->setQueryString($data);
+    }
 
+    public function addQueryString($key, $value = null)
+    {
+        return $this->queryString[$key] = $value;
     }
 
 }

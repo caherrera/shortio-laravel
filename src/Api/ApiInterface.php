@@ -59,8 +59,22 @@ interface ApiInterface
 
     public function delete($id);
 
-    public function withQueryString(array $data = []): self ;
+    public function getQueryString();
 
+    /**
+     * @return boolean
+     */
+    public function hasQueryString();
+
+    public function withQueryString(array $data = []);
+
+    /**
+     * @param  string|array  $key
+     * @param  null  $value
+     *
+     * @return mixed
+     */
+    public function addQueryString($key, $value = null);
 
     /**
      * @return \Illuminate\Http\Client\PendingRequest

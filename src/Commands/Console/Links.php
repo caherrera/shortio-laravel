@@ -47,8 +47,7 @@ class Links extends Command
                 }
             )
             ->except(['command']);
-        $link  = new Link();
-        $links = $link->all();
+        $links = Link::all();
 
         dd($links);
     }

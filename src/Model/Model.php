@@ -299,6 +299,90 @@ abstract class Model implements ArrayAccess, JsonSerializable
         return $ApiClass;
     }
 
+
+    static public function all()
+    {
+        $i = ($instance = new static)->newInstance();
+
+        return $i->hydrate(
+            $i->getApi()->all()
+        )->all();
+    }
+
+    /**
+     * Create a new instance of the given model.
+     *
+     * @param  array  $attributes
+     * @param  bool  $exists
+     *
+     * @return static
+     */
+    public function newInstance($attributes = [], $exists = false)
+    {
+        // This method just provides a convenient way for us to generate fresh model
+        // instances of this current model. It is particularly useful during the
+        // hydration of new objects via the Eloquent query builder instances.
+        $model = new static((array)$attributes);
+
+        $model->exists = $exists;
+
+        $model->mergeCasts($this->casts);
+
+        return $model;
+    }
+
+    /**
+     * Create a collection of models from plain arrays.
+     *
+     * @param  array  $items
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function hydrate(array $items)
+    {
+        $instance = $this->newInstance();
+
+        return $instance->newCollection(
+            array_map(
+                function ($item) use ($instance) {
+                    return $instance->newFromBuilder($item);
+                },
+                $items
+            )
+        );
+    }
+
+    /**
+     * Create a new Eloquent Collection instance.
+     *
+     * @param  array  $models
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function newCollection(array $models = [])
+    {
+        return collect($models);
+    }
+
+    /**
+     * Create a new model instance that is existing.
+     *
+     * @param  array  $attributes
+     * @param  string|null  $connection
+     *
+     * @return static
+     */
+    public function newFromBuilder($attributes = [])
+    {
+        $model = $this->newInstance([], true);
+
+        $model->setRawAttributes((array)$attributes, true);
+
+        $model->fireModelEvent('retrieved', false);
+
+        return $model;
+    }
+
     /**
      * Get the name of the "created at" column.
      *
@@ -656,9 +740,33 @@ abstract class Model implements ArrayAccess, JsonSerializable
         return true;
     }
 
-    public function all()
+    /**
+     * @param  string|array  $column
+     * @param  null  $operator
+     * @param  null  $value
+     */
+    public function where($column, $value = null)
     {
-        return $this->getApi()->all();
+        if (is_array($column)) {
+            foreach ($column as $key => $value) {
+                $this->getApi()->addQueryString($key, $value);
+            }
+
+            return $this;
+        } elseif (is_string($column)) {
+            return $this->getApi()->addQueryString($column, $value);
+        }
+
+        return $this;
+    }
+
+    public function get()
+    {
+        if ($this->getApi()->hasQueryString()) {
+            return $this->getApi()->get();
+        } else {
+            return $this->getApi()->get($this->id);
+        }
     }
 
     /**
