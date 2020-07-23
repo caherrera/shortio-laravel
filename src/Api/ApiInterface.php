@@ -17,6 +17,8 @@ interface ApiInterface
 
     public function getPath();
 
+    public function getFullPath();
+
     public function className();
 
     public function prepareHeaders();
@@ -56,5 +58,13 @@ interface ApiInterface
     public function prepareGenericUrl($id);
 
     public function delete($id);
+
+    public function withQueryString(array $data = []): self ;
+
+
+    /**
+     * @return \Illuminate\Http\Client\PendingRequest
+     */
+    public function prepareRequest();
 
 }

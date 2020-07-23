@@ -152,9 +152,9 @@ class Shortio implements ConnectionInterface
         return $this->domains;
     }
 
-    public function getConfig()
+    public function getConfig($config = null)
     {
-        return $this->config;
+        return $config ? ($this->config[$config] ?? null) : $this->config;
     }
 
     /**

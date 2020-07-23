@@ -9,7 +9,7 @@ interface ConnectionInterface
 
     public function config($key = null);
 
-    public function getConfig();
+    public function getConfig($config = null);
 
     public function getPubKey(): string;
 

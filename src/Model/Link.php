@@ -24,12 +24,12 @@ use Shortio\Laravel\Api\Link as Api;
  * @property string cloaking
  * @property string source
  * @property string AutodeletedAt
- * @property string createdAt
- * @property string updatedAt
- * @property integer DomainId
- * @property integer OwnerId
- * @property string secureShortURL
- * @property string shortURL
+ * @property-read string createdAt
+ * @property-read string updatedAt
+ * @property-read integer DomainId
+ * @property-read integer OwnerId
+ * @property-read string secureShortURL
+ * @property-read string shortURL
  */
 
 
@@ -39,6 +39,19 @@ class Link extends Model
 
     protected $fillable = Api::properties;
 
+    public function domain() {
+        return new Domain();
+    }
 
+
+    public function all()
+    {
+        $domains = $this->domain()->all();
+        $links=collect();
+        foreach($domains as $domain) {
+            $this->getApi()->get();
+        }
+
+    }
 
 }

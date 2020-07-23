@@ -48,6 +48,7 @@ abstract class Api implements ApiInterface
     {
         $this->setConnector($connector)
              ->setConfig($connector->config())
+             ->setPath($connector->getConfig('path'))
              ->setBaseUrl($this->prepareBaseUrl())
              ->setHeaders($this->prepareHeaders());
     }
@@ -66,13 +67,10 @@ abstract class Api implements ApiInterface
     {
         $host     = $this->getHost();
         $protocol = $this->getProtocol();
-        $path     = $this->getPath();
-        $basePath = collect(["$protocol:/", $host, $path]);
-        if ($url) {
-            $basePath->merge((array)($url));
-        }
+        $path     = $this->getFullPath($url);
+        $basePath = collect(["$protocol:/", $host, $path])->join('/');
 
-        return $basePath->join('/');
+        return $basePath;
     }
 
     public function getHost()
@@ -85,9 +83,29 @@ abstract class Api implements ApiInterface
         return $this->config['secure'] ? 'https' : 'http';
     }
 
-    public function getPath()
+    public function getFullPath($path = null)
     {
-        return $this->path ?? Str::slug(Str::plural($this->className()));
+        return $this->getPath(Str::slug(Str::plural($this->className())), $path);
+    }
+
+    /**
+     * @return string
+     */
+    public function getPath(): string
+    {
+        return collect(explode('/', $this->path))->merge(func_get_args())->join('/');
+    }
+
+    /**
+     * @param  string  $path
+     *
+     * @return Api
+     */
+    public function setPath(string $path): Api
+    {
+        $this->path = $path;
+
+        return $this;
     }
 
     public function className()
@@ -190,7 +208,7 @@ abstract class Api implements ApiInterface
     /**
      * @return \Illuminate\Http\Client\PendingRequest
      */
-    private function prepareRequest()
+    public function prepareRequest()
     {
         $request = Http::baseUrl($this->getBaseUrl())
                        ->withHeaders($this->getHeaders());
@@ -286,6 +304,11 @@ abstract class Api implements ApiInterface
     public function delete($id)
     {
         return $this->processRequest('delete', $id, []);
+    }
+
+    public function withQueryString(array $data = []): ApiInterface
+    {
+
     }
 
 }

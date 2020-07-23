@@ -656,6 +656,11 @@ abstract class Model implements ArrayAccess, JsonSerializable
         return true;
     }
 
+    public function all()
+    {
+        return $this->getApi()->all();
+    }
+
     /**
      * Initialize any initializable traits on the model.
      *
