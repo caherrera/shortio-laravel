@@ -4,6 +4,7 @@ namespace Shortio\Laravel\Api;
 
 class Link extends Api
 {
+
     const properties = [
         "path",
         "title",

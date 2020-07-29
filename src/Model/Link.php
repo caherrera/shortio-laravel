@@ -2,6 +2,8 @@
 
 namespace Shortio\Laravel\Model;
 
+use Illuminate\Support\Facades\Cache;
+use Shortio\Laravel\Api\ApiInterface;
 use Shortio\Laravel\Api\Link as Api;
 
 
@@ -24,9 +26,9 @@ use Shortio\Laravel\Api\Link as Api;
  * @property string cloaking
  * @property string source
  * @property string AutodeletedAt
+ * @property integer DomainId
  * @property-read string createdAt
  * @property-read string updatedAt
- * @property-read integer DomainId
  * @property-read integer OwnerId
  * @property-read string secureShortURL
  * @property-read string shortURL
@@ -48,15 +50,23 @@ class Link extends Model
 
     static public function all()
     {
-        $domains  = Domain::all();
-        $links    = collect();
         $instance = (new static)->newInstance();
-        foreach ($domains as $domain) {
-            $_links = $instance->where(['domain_id' => $domain->id])->get();
-            $links  = $links->merge($_links);
-        }
 
-        return $links->all();
+        return Cache::remember(
+            static::class.'@all',
+            config("shortio.cache.timeout"),
+            function () use ($instance) {
+                $domains = Domain::all();
+                $links   = collect();
+
+                foreach ($domains as $domain) {
+                    $_links = $instance->where(['domain_id' => $domain->id])->get();
+                    $links  = $links->merge($_links);
+                }
+
+                return $links->all();
+            }
+        );
     }
 
     public function get($path = null)
@@ -83,16 +93,55 @@ class Link extends Model
     }
 
 
-
     public function domain()
     {
-        if (!$this->domain) {
+        if ( ! $this->domain) {
             if ($this->DomainId) {
                 return $this->domain = Domain::find($this->DomainId);
             }
         }
 
         return $this->domain;
+    }
+
+    /**
+     * Perform a model insert operation.
+     *
+     * @return bool
+     */
+    protected function performInsert(ApiInterface $api)
+    {
+        if ($this->fireModelEvent('creating') === false) {
+            return false;
+        }
+
+        $attributes = collect($this->getAttributes())->filter(
+            function ($v) {
+                return ! empty($v);
+            }
+        )->all();
+        if (isset($attributes['DomainId'])) {
+            $attributes['domain'] = Domain::find($attributes['DomainId'])->hostname;
+            unset($attributes['DomainId']);
+        }
+
+        if (empty($attributes)) {
+            return true;
+        }
+
+        $data = $api->save($attributes);
+        $this->fill($data);
+
+        // We will go ahead and set the exists property to true, so that it is set when
+        // the created event is fired, just in case the developer tries to update it
+        // during the event. This will allow them to do so and run an update here.
+        $this->exists = true;
+
+        $this->wasRecentlyCreated = true;
+
+        $this->fireModelEvent('created', false);
+
+        return true;
     }
 
 }

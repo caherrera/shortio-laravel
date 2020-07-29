@@ -55,7 +55,7 @@ interface ApiInterface
 
     public function setId($id);
 
-    public function prepareGenericUrl($id);
+    public function prepareGenericUrl($name, $id = null);
 
     public function delete($id);
 

@@ -4,6 +4,7 @@ namespace Shortio\Laravel\Model;
 
 use ArrayAccess;
 use Illuminate\Support\Collection as BaseCollection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use JsonSerializable;
 use Shortio\Laravel\Api\ApiInterface;
@@ -310,11 +311,17 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     static public function all()
     {
-        $i = ($instance = new static)->newInstance();
+        $i = (new static)->newInstance();
 
-        return $i->hydrate(
-            $i->getApi()->all()
-        )->all();
+        return Cache::remember(
+            static::class.'@all',
+            config("shortio.cache.timeout"),
+            function () use ($i) {
+                return $i->hydrate(
+                    $i->getApi()->all()
+                )->all();
+            }
+        );
     }
 
     /**
@@ -468,6 +475,11 @@ abstract class Model implements ArrayAccess, JsonSerializable
     public function toArray()
     {
         return array_merge($this->attributesToArray(), $this->relationsToArray());
+    }
+
+    public function relationsToArray()
+    {
+        return [];
     }
 
     /**
@@ -768,11 +780,22 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     public function get($path = null)
     {
-//        if ($this->getApi()->hasQueryString()) {
-        return $this->getApi()->get($path);
-//        } else {
-//            return $this->getApi()->get([$path, $this->id]);
-//        }
+        $cache_key = static::class.'@get';
+        if ($path) {
+            $cache_key .= '/'.$path;
+        }
+        if ($this->getApi()->hasQueryString()) {
+            $cache_key .= '/'.base64_encode(serialize($this->getApi()->getQueryString()));
+        }
+        $api = $this->getApi();
+
+        return Cache::remember(
+            $cache_key,
+            config('shortio.cache.timeout'),
+            function () use ($api, $path) {
+                return $api->get($path);
+            }
+        );
     }
 
     /**
@@ -786,4 +809,6 @@ abstract class Model implements ArrayAccess, JsonSerializable
             $this->{$method}();
         }
     }
+
+
 }

@@ -50,7 +50,6 @@ abstract class Api implements ApiInterface
     {
         $this->setConnector($connector)
              ->setConfig($connector->config())
-             ->setPath($connector->getConfig('path'))
              ->setBaseUrl($this->prepareBaseUrl())
              ->setHeaders($this->prepareHeaders());
     }
@@ -69,10 +68,14 @@ abstract class Api implements ApiInterface
     {
         $host     = $this->getHost();
         $protocol = $this->getProtocol();
-        $path     = $this->getFullPath($url);
-        $basePath = collect(["$protocol:/", $host, $path])->join('/');
+        $path     = $this->getPath($url);
+        $basePath = collect(["$protocol:/", $host, $path])->filter(
+            function ($i) {
+                return ! empty($i) && $i !== "/";
+            }
+        )->join('/');
 
-        return $basePath;
+        return $basePath."/";
     }
 
     public function getHost()
@@ -83,11 +86,6 @@ abstract class Api implements ApiInterface
     public function getProtocol()
     {
         return $this->config['secure'] ? 'https' : 'http';
-    }
-
-    public function getFullPath($path = null)
-    {
-        return $this->getPath(Str::slug(Str::plural($this->className())), $path);
     }
 
     /**
@@ -108,11 +106,6 @@ abstract class Api implements ApiInterface
         $this->path = $path;
 
         return $this;
-    }
-
-    public function className()
-    {
-        return Str::singular(class_basename($this));
     }
 
     public function prepareHeaders()
@@ -139,6 +132,16 @@ abstract class Api implements ApiInterface
 
 
         return $this;
+    }
+
+    public function getFullPath($path = null)
+    {
+        return $this->getPath(Str::slug(Str::plural($this->className())), $path);
+    }
+
+    public function className()
+    {
+        return Str::singular(class_basename($this));
     }
 
     /**
@@ -176,7 +179,7 @@ abstract class Api implements ApiInterface
 
     public function get($id = null)
     {
-        return $this->processRequest('get', $id ?? '', $this->getQueryString());
+        return $this->processRequest('get', $this->prepareGetUrl($id ?? ''));
     }
 
     /**
@@ -189,7 +192,11 @@ abstract class Api implements ApiInterface
      */
     private function processRequest($method, $url = '', $query = [])
     {
-        $response          = $this->__callRequest($method, $url, $query);
+        $response          = $this->__callRequest(
+            $method,
+            $url,
+            collect($this->getQueryString())->merge($query)->unique()->all()
+        );
         $this->responses[] = $response;
 
         if ($response->successful()) {
@@ -269,7 +276,7 @@ abstract class Api implements ApiInterface
 
     public function all()
     {
-        $array = $this->processRequest('get');
+        $array = $this->processRequest('get', $this->prepareListUrl());
 
         return $array ?? [];
     }
@@ -286,7 +293,7 @@ abstract class Api implements ApiInterface
 
     public function create(array $data = [])
     {
-        return $this->post('', $data);
+        return $this->post($this->prepareCreateUrl(), $data);
     }
 
     public function post($url, array $data = [])
@@ -319,16 +326,21 @@ abstract class Api implements ApiInterface
         return $this;
     }
 
-    public function prepareGenericUrl($id)
+    public function prepareGenericUrl($name, $id = null)
     {
-        return $id;
+        $ref  = Str::lower($this->className());
+        $name = Str::lower($name);
+        $url  = config("shortio.endpoints.$ref.$name.endpoint");
+        $url  = $this->getPath($url, $id);
+
+        return $url;
     }
 
     public function __call($name, $arguments)
     {
         switch (true) {
             case preg_match("/prepare(.*)Url/", $name, $match):
-                return call_user_func_array([$this, 'prepareGenericUrl'], $arguments);
+                return call_user_func_array([$this, 'prepareGenericUrl'], array_merge([$match[1]], $arguments));
         }
     }
 

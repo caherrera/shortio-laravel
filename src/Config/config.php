@@ -22,7 +22,22 @@ return [
     |
     */
 
-    'path' => env('SHORTIO_PATH', 'api'),
+    'endpoints' => [
+        'domain' => [
+            'get'    => ['method' => 'POST', 'endpoint' => env('SHORTIO_PATH_DOMAIN_GET', 'api/domains')],
+            'list'   => ['method' => 'POST', 'endpoint' => env('SHORTIO_PATH_DOMAIN_LIST', 'api/domains')],
+            'create' => ['method' => 'POST', 'endpoint' => env('SHORTIO_PATH_DOMAIN_CREATE', 'domains')],
+            'update' => ['method' => 'POST', 'endpoint' => env('SHORTIO_PATH_DOMAIN_UPDATE', 'domains/settings')],
+            'delete' => ['method' => 'POST', 'endpoint' => env('SHORTIO_PATH_DOMAIN_DELETE', 'domains/delete')],
+        ],
+        'link'   => [
+            'get'    => ['method' => 'GET', 'endpoint' => env('SHORTIO_PATH_LINKS_GET', 'api/links')],
+            'list'   => ['method' => 'GET', 'endpoint' => env('SHORTIO_PATH_LINKS_LIST', 'api/links')],
+            'create' => ['method' => 'POST', 'endpoint' => env('SHORTIO_PATH_LINKS_CREATE', 'links')],
+            'update' => ['method' => 'POST', 'endpoint' => env('SHORTIO_PATH_LINKS_UPDATE', 'links/{ID}')],
+            'delete' => ['method' => 'DELETE', 'endpoint' => env('SHORTIO_PATH_LINKS_DELETE', 'links')],
+        ]
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -72,5 +87,16 @@ return [
     */
     'headers' => env('SHORTIO_HEADERS', []),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cache
+    |--------------------------------------------------------------------------
+    |
+    | Setting Cache
+    |
+    */
+    'cache'   => [
+        'timeout' => env('SHORTIO_CACHE_TIMEOUT', 3600),
+    ]
 
 ];

@@ -12,17 +12,17 @@ class Links extends Command
      *
      * @var string
      */
-    protected $signature = 'shortio:link 
-        {--domain : example \'mydomain.com\'} 
-        {--originalURL : example "https://google.com"}        
-        {--path= : Set path value to new link }        
+    protected $signature = 'shortio:links
+        {--domain : example \'mydomain.com\'}
+        {--originalURL : example "https://google.com"}
+        {--path= : Set path value to new link }
         {--expiresAt= : Set expiresAt value to new link }
         {--expiredURL= : Set expiredURL value to new link }
         {--redirectType= : Set redirectType value to new link }
         {--cloaking= : Set cloaking value to new link }
         {--source= : Set source value to new link }
         {--AutodeletedAt= : Set AutodeletedAt value to new link }
-        
+
     ';
 
     /**
@@ -39,7 +39,7 @@ class Links extends Command
      */
     public function handle()
     {
-        $data  = collect($this->arguments())
+        $data   = collect($this->arguments())
             ->merge($this->options())
             ->filter(
                 function ($value) {
@@ -47,8 +47,15 @@ class Links extends Command
                 }
             )
             ->except(['command']);
-        $links = Link::all();
-
-        dd($links);
+        $links  = collect(Link::all());
+        $header = collect($links->first()->getAttributes())->only(['id','path','title','originalURL','expiresAt','createdAt'])->keys()->all();
+        $this->table(
+            $header,
+            $links->map(
+                function ($link) use ($header) {
+                    return collect($link->toArray())->only($header);
+                }
+            )
+        );
     }
 }
