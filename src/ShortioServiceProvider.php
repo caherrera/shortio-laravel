@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Shortio\Laravel\Commands\Console\Create;
+use Shortio\Laravel\Commands\Console\GetLink;
 use Shortio\Laravel\Commands\Console\Links;
 
 class ShortioServiceProvider extends ServiceProvider
@@ -31,7 +32,7 @@ class ShortioServiceProvider extends ServiceProvider
                     $config => config_path('shortio.php'),
                 ]
             );
-            $this->commands([Create::class,Links::class]);
+            $this->commands([Create::class,Links::class,GetLink::class]);
         }
     }
 

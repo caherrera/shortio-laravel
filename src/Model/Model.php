@@ -299,6 +299,14 @@ abstract class Model implements ArrayAccess, JsonSerializable
         return $ApiClass;
     }
 
+    public static function find($id)
+    {
+        return collect(static::all())->filter(
+            function ($instance) use ($id) {
+                return $id == $instance->id;
+            }
+        )->first();
+    }
 
     static public function all()
     {
@@ -751,22 +759,20 @@ abstract class Model implements ArrayAccess, JsonSerializable
             foreach ($column as $key => $value) {
                 $this->getApi()->addQueryString($key, $value);
             }
-
-            return $this;
         } elseif (is_string($column)) {
-            return $this->getApi()->addQueryString($column, $value);
+            $this->getApi()->addQueryString($column, $value);
         }
 
         return $this;
     }
 
-    public function get()
+    public function get($path = null)
     {
-        if ($this->getApi()->hasQueryString()) {
-            return $this->getApi()->get();
-        } else {
-            return $this->getApi()->get($this->id);
-        }
+//        if ($this->getApi()->hasQueryString()) {
+        return $this->getApi()->get($path);
+//        } else {
+//            return $this->getApi()->get([$path, $this->id]);
+//        }
     }
 
     /**

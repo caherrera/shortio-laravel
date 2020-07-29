@@ -8,6 +8,4 @@ class Domain extends Model
 
 
 
-
-
 }
