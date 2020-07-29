@@ -131,6 +131,7 @@ class Link extends Model
 
         $data = $api->save($attributes);
         $this->fill($data);
+        $this->id = $data['id'];
 
         // We will go ahead and set the exists property to true, so that it is set when
         // the created event is fired, just in case the developer tries to update it
