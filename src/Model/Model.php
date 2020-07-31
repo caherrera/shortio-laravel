@@ -810,5 +810,16 @@ abstract class Model implements ArrayAccess, JsonSerializable
         }
     }
 
+    /**
+     * Determine if the given relation is loaded.
+     *
+     * @param  string  $key
+     * @return bool
+     */
+    public function relationLoaded($key)
+    {
+        return true;
+    }
+
 
 }
