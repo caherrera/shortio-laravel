@@ -19,7 +19,7 @@ Laravel GitLab requires [PHP](https://php.net) 7.2-7.4. This particular version 
 To get the latest version, simply require the project using [Composer](https://getcomposer.org). 
 
 ```bash
-$ composer require caherrera/shortio-laravel
+$ composer require kirankumar/shortio-laravel
 ```
 
 Once installed, if you are not using automatic package discovery, then you need to register the `Shortio\Laravel\ShortioServiceProvider` service provider in your `config/app.php`.
