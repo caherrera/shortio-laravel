@@ -30,7 +30,7 @@
   ],
   "require": {
     "ext-json": "*",
-    "illuminate/contracts": "^7.0"
+    "illuminate/contracts": "^7.0|^8.0"
   },
   "autoload": {
     "psr-4": {
