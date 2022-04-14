@@ -1,8 +1,7 @@
 {
-  "name": "caherrera/shortio-laravel",
+  "name": "kirankumar/shortio-laravel",
   "description": "shortio-laravel Is A ShortIO Api For Laravel",
   "license": "MIT",
-  "version": "0.2.2",
   "keywords": [
     "laravel",
     "framework",
@@ -30,7 +29,7 @@
   ],
   "require": {
     "ext-json": "*",
-    "illuminate/contracts": "^7.0"
+    "illuminate/contracts": "^7.0|^8.0"
   },
   "autoload": {
     "psr-4": {
