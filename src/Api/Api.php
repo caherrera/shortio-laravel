@@ -332,7 +332,7 @@ abstract class Api implements ApiInterface
         $name = Str::lower($name);
         $url  = config("shortio.endpoints.$ref.$name.endpoint");
         $url  = $this->getPath($url, $id);
-
+        $url = str_replace("{ID}/", "", $url);
         return $url;
     }
 
